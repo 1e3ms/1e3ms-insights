@@ -1,0 +1,4 @@
+[run]
+omit =
+  insights/tests/*
+  .tox/*
