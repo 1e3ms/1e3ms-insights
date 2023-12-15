@@ -17,6 +17,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import signal
+import sys
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator
 
@@ -27,6 +29,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.responses import Response
 from starlette.types import Scope
 
+from insights.config import Config, ConfigError
 from insights.logging import get_uvicorn_logging_config, setup_logging
 
 
@@ -65,17 +68,30 @@ def get_frontend_data_path() -> str:
     )
 
 
-def insights_factory(static_dir: str | None = None) -> FastAPI:
+def insights_factory(static_dir: str | None = None) -> FastAPI | None:
     api_tags_meta = []
 
-    insights_app = FastAPI(docs_url=None)
+    insights_app = FastAPI(
+        docs_url=None,
+        lifespan=lifespan,
+    )
     insights_api = FastAPI(
         title="Project Insights API",
         description="Obtain insights about GitHub projects",
         version="0.1.0",
         openapi_tags=api_tags_meta,
-        lifespan=lifespan,
     )
+
+    config_path: str | None = os.getenv("INSIGHTS_CONFIG")
+    if config_path is None:
+        logger.error("Unable to find config file")
+        sys.exit(signal.SIGILL)
+
+    try:
+        insights_api.state.config = Config(config_path)
+    except ConfigError as e:
+        logger.error(f"Unable to obtain config: {str(e)}")
+        sys.exit(signal.SIGILL)
 
     insights_app.mount("/api", insights_api, name="API")
 

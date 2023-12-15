@@ -25,3 +25,5 @@ proxy.conf.json
 .pre-commit-venv
 /venv
 .venv
+
+*.pem

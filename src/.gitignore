@@ -5,3 +5,4 @@ venv/
 coverage.xml
 .pytest_cache
 htmlcov/
+config.json

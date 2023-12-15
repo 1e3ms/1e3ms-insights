@@ -1,0 +1,7 @@
+{
+  "github": {
+    "app_id": 123456,
+    "private_key_path": "/path/to/app.private-key.pem",
+    "webhook_secret": "secret"
+  }
+}
