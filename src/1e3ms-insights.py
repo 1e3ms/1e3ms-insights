@@ -29,7 +29,9 @@ from fastapi.staticfiles import StaticFiles
 from starlette.responses import Response
 from starlette.types import Scope
 
+from insights.api import github as github_api
 from insights.config import Config, ConfigError
+from insights.engine.github import Github, InvalidPrivateKeyError
 from insights.logging import get_uvicorn_logging_config, setup_logging
 
 
@@ -68,8 +70,31 @@ def get_frontend_data_path() -> str:
     )
 
 
+def state_init(insights_api: FastAPI) -> None:
+    config_path: str | None = os.getenv("INSIGHTS_CONFIG")
+    if config_path is None:
+        logger.error("Unable to find config file")
+        sys.exit(signal.SIGILL)
+
+    try:
+        cfg = Config(config_path)
+    except ConfigError as e:
+        logger.error(f"Unable to obtain config: {str(e)}")
+        sys.exit(signal.SIGILL)
+
+    try:
+        gh = Github(cfg.github)
+        logger.debug("GitHub connection inited")
+    except InvalidPrivateKeyError as e:
+        logger.error(f"Unable to setup GitHub connection: {str(e)}")
+        sys.exit(signal.SIGILL)
+
+    insights_api.state.config = cfg
+    insights_api.state.github = gh
+
+
 def insights_factory(static_dir: str | None = None) -> FastAPI | None:
-    api_tags_meta = []
+    api_tags_meta = [{"name": "github", "description": "GitHub webhook operations"}]
 
     insights_app = FastAPI(
         docs_url=None,
@@ -82,18 +107,11 @@ def insights_factory(static_dir: str | None = None) -> FastAPI | None:
         openapi_tags=api_tags_meta,
     )
 
-    config_path: str | None = os.getenv("INSIGHTS_CONFIG")
-    if config_path is None:
-        logger.error("Unable to find config file")
-        sys.exit(signal.SIGILL)
+    state_init(insights_api)
 
-    try:
-        insights_api.state.config = Config(config_path)
-    except ConfigError as e:
-        logger.error(f"Unable to obtain config: {str(e)}")
-        sys.exit(signal.SIGILL)
+    insights_api.include_router(github_api.router)
 
-    insights_app.mount("/api", insights_api, name="API")
+    insights_app.mount("/api/v1", insights_api, name="API")
 
     if static_dir is not None:
         insights_app.mount("/", CustomStaticFiles(static_dir), name="static")
