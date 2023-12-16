@@ -3,5 +3,11 @@
     "app_id": 123456,
     "private_key_path": "/path/to/app.private-key.pem",
     "webhook_secret": "secret"
+  },
+  "mongodb": {
+    "address": "127.0.0.1",
+    "port": 27017,
+    "username": "root",
+    "password": "testpasswd"
   }
 }

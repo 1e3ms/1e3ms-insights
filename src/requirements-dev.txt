@@ -6,3 +6,4 @@ pytest-cov
 pytest-mock
 pyright
 flake8
+motor-types[motor]

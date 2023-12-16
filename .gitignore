@@ -27,3 +27,4 @@ proxy.conf.json
 .venv
 
 *.pem
+/data

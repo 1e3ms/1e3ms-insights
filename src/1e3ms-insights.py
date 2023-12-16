@@ -31,6 +31,7 @@ from starlette.types import Scope
 
 from insights.api import github as github_api
 from insights.config import Config, ConfigError
+from insights.engine.db import DB, DBError
 from insights.engine.github import Github, InvalidPrivateKeyError
 from insights.logging import get_uvicorn_logging_config, setup_logging
 
@@ -89,8 +90,16 @@ def state_init(insights_api: FastAPI) -> None:
         logger.error(f"Unable to setup GitHub connection: {str(e)}")
         sys.exit(signal.SIGILL)
 
+    try:
+        db = DB(cfg.db)
+        logger.debug("Database connection inited")
+    except DBError as e:
+        logger.error(f"Unable to setup database connection: {str(e)}")
+        sys.exit(signal.SIGILL)
+
     insights_api.state.config = cfg
     insights_api.state.github = gh
+    insights_api.state.db = db
 
 
 def insights_factory(static_dir: str | None = None) -> FastAPI | None:

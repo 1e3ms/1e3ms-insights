@@ -86,12 +86,21 @@ class GitHubConfigModel(BaseModel):
         return v
 
 
+class MongoDBConfigModel(BaseModel):
+    address: str
+    port: int
+    username: str
+    password: str
+
+
 class ConfigModel(BaseModel):
     github: GitHubConfigModel
+    mongodb: MongoDBConfigModel
 
 
 class Config:
     _github: GitHubConfigModel
+    _db: MongoDBConfigModel
 
     def __init__(self, path: str) -> None:
         p = Path(path)
@@ -111,7 +120,12 @@ class Config:
                 raise ConfigError(f"Unable to parse config from JSON: {str(e)}")
 
             self._github = cfg.github
+            self._db = cfg.mongodb
 
     @property
     def github(self) -> GitHubConfigModel:
         return self._github
+
+    @property
+    def db(self) -> MongoDBConfigModel:
+        return self._db
