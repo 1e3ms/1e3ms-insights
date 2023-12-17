@@ -11,6 +11,8 @@ from fastapi.logger import logger
 from githubkit.webhooks import parse
 from githubkit.webhooks.types import WebhookEvent
 
+from insights.engine.handlers import handle_webhook
+
 router = APIRouter(prefix="/github", tags=["github"])
 
 
@@ -22,4 +24,8 @@ async def receive_webhook(request: Request):
         return
 
     event: WebhookEvent = parse(event_name, await request.body())
-    logger.debug(f"event received: {event_name}, event: {event}")
+    logger.debug(
+        f"event received: {event_name}, event: {event.model_dump_json(indent=2)}"
+    )
+
+    await handle_webhook(event_name, event)
