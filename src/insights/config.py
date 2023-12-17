@@ -93,14 +93,20 @@ class MongoDBConfigModel(BaseModel):
     password: str
 
 
+class EventDBConfigModel(BaseModel):
+    path: Path
+
+
 class ConfigModel(BaseModel):
     github: GitHubConfigModel
     mongodb: MongoDBConfigModel
+    events: EventDBConfigModel | None
 
 
 class Config:
     _github: GitHubConfigModel
     _db: MongoDBConfigModel
+    _eventdb: EventDBConfigModel | None
 
     def __init__(self, path: str) -> None:
         p = Path(path)
@@ -121,6 +127,7 @@ class Config:
 
             self._github = cfg.github
             self._db = cfg.mongodb
+            self._eventdb = cfg.events
 
     @property
     def github(self) -> GitHubConfigModel:
@@ -129,3 +136,12 @@ class Config:
     @property
     def db(self) -> MongoDBConfigModel:
         return self._db
+
+    def has_eventdb(self) -> bool:
+        return self._eventdb is not None
+
+    @property
+    def eventdb(self) -> Path | None:
+        if self._eventdb is not None:
+            return self._eventdb.path
+        return None
