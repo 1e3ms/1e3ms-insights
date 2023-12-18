@@ -10,7 +10,7 @@
 import json
 from pathlib import Path
 
-from pydantic import BaseModel, ValidationError, field_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 
 class ConfigError(Exception):
@@ -94,13 +94,14 @@ class MongoDBConfigModel(BaseModel):
 
 
 class EventDBConfigModel(BaseModel):
-    path: Path
+    eventdb_path: Path
+    errors_path: Path | None = Field(default=None)
 
 
 class ConfigModel(BaseModel):
     github: GitHubConfigModel
     mongodb: MongoDBConfigModel
-    events: EventDBConfigModel | None
+    events: EventDBConfigModel | None = Field(default=None)
 
 
 class Config:
@@ -143,5 +144,11 @@ class Config:
     @property
     def eventdb(self) -> Path | None:
         if self._eventdb is not None:
-            return self._eventdb.path
+            return self._eventdb.eventdb_path
+        return None
+
+    @property
+    def eventdb_errors(self) -> Path | None:
+        if self._eventdb is not None:
+            return self._eventdb.errors_path
         return None
