@@ -9,29 +9,14 @@
 from urllib.parse import quote_plus
 
 import motor.motor_asyncio
+from fastapi.logger import logger
 
 from insights.config import MongoDBConfigModel
-
-_DB_PROJECTS = "projects"
-_DB_COLLECTION_PROJECT = "project-{projectid}"
+from insights.engine.db_types import DBError
 
 
-class DBError(Exception):
-    _msg: str | None
-
-    def __init__(self, msg: str | None = None) -> None:
-        self._msg = msg
-
-    def __str__(self) -> str:
-        return f"Database Error: {self._msg}"
-
-    def __repr__(self) -> str:
-        return str(self)
-
-
-class DB:
+class DBClient:
     _client: motor.motor_asyncio.AsyncIOMotorClient
-    _projects_db: motor.motor_asyncio.AsyncIOMotorDatabase
 
     def __init__(self, config: MongoDBConfigModel) -> None:
         uri = "mongodb://{}:{}@{}:{}".format(
@@ -42,14 +27,10 @@ class DB:
         )
         try:
             self._client = motor.motor_asyncio.AsyncIOMotorClient(uri)
+            logger.debug("MongoDB client initialized")
         except Exception as e:
             raise DBError(f"failed to connect: {str(e)}")
 
-        self._projects_db = self._client[_DB_PROJECTS]
-
-    def get_project_collection(
-        self, project_id: str
-    ) -> motor.motor_asyncio.AsyncIOMotorCollection:
-        return self._projects_db[
-            _DB_COLLECTION_PROJECT.format(projectid=project_id)
-        ]  # pyright: ignore[reportUnknownVariableType]
+    @property
+    def client(self) -> motor.motor_asyncio.AsyncIOMotorClient:
+        return self._client

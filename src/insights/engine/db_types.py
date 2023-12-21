@@ -6,11 +6,29 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 
+from datetime import datetime as dt
 from typing import Annotated
 
 from pydantic import BaseModel, BeforeValidator, Field
 
+from insights.error import InsightsError
+
+
+class DBError(InsightsError):
+    def __init__(self, msg: str | None = None) -> None:
+        super().__init__(f"Database Error: {msg}")
+
+
 PyObjectId = Annotated[str, BeforeValidator(str)]
+
+
+class InstallationEntry(BaseModel):
+    id: PyObjectId | None = Field(alias="_id", default=None)
+
+    installation_id: str
+    updated_at: dt | None = Field(default=None)
+    probed_at: dt | None = Field(default=None)
+    deleted_at: dt | None = Field(default=None)
 
 
 class ProjectEntry(BaseModel):

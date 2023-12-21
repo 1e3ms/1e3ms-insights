@@ -35,3 +35,35 @@ addopts = [
     "--cov-report=xml",
     "--cov-report=html"
 ]
+
+[tool.poetry]
+name = "1e3ms-insights"
+version = "0.1.0"
+description = "Generate GitHub project insights and metrics"
+authors = ["Joao Eduardo Luis <joao@1e3ms.io>"]
+license = "AGPL-3.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.105.0"
+pydantic = "^2.5.2"
+uvicorn = "^0.24.0.post1"
+pydash = "^7.0.6"
+githubkit = {git = "https://github.com/yanyongyu/githubkit.git", rev = "master", extras = ["auth-app"]}
+motor = "^3.3.2"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.12.0"
+isort = "^5.13.2"
+tox = "^4.11.4"
+pytest = "^7.4.3"
+pytest-cov = "^4.1.0"
+pytest-mock = "^3.12.0"
+pyright = "^1.1.341"
+flake8 = "^6.1.0"
+motor-types = {git = "https://github.com/jecluis/motor-types.py.git", rev = "wip-fix-unknowns", extras = ["motor"]}
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

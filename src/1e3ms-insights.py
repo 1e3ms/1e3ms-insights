@@ -16,9 +16,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import asyncio
 import os
-import signal
-import sys
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator
 
@@ -30,10 +29,9 @@ from starlette.responses import Response
 from starlette.types import Scope
 
 from insights.api import github as github_api
-from insights.config import Config, ConfigError
-from insights.engine.db import DB, DBError
-from insights.engine.github import Github, InvalidPrivateKeyError
+from insights.error import InsightsError
 from insights.logging import get_uvicorn_logging_config, setup_logging
+from insights.state import GlobalState
 
 
 class CustomStaticFiles(StaticFiles):
@@ -58,7 +56,19 @@ class CustomStaticFiles(StaticFiles):
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
     logger.info("Starting 1e3ms-insights")
+
+    gstate: GlobalState = app.state.gstate
+    assert not gstate.inited
+
+    try:
+        await gstate.init()
+        logger.info("Application global state initialized")
+    except InsightsError as e:
+        logger.error(f"Unable to init application: {str(e)}")
+        raise BaseException()
+
     yield
+
     logger.info("Stopping 1e3ms-insights")
 
 
@@ -71,38 +81,9 @@ def get_frontend_data_path() -> str:
     )
 
 
-def state_init(insights_api: FastAPI) -> None:
-    config_path: str | None = os.getenv("INSIGHTS_CONFIG")
-    if config_path is None:
-        logger.error("Unable to find config file")
-        sys.exit(signal.SIGILL)
-
-    try:
-        cfg = Config(config_path)
-    except ConfigError as e:
-        logger.error(f"Unable to obtain config: {str(e)}")
-        sys.exit(signal.SIGILL)
-
-    try:
-        gh = Github(cfg.github)
-        logger.debug("GitHub connection inited")
-    except InvalidPrivateKeyError as e:
-        logger.error(f"Unable to setup GitHub connection: {str(e)}")
-        sys.exit(signal.SIGILL)
-
-    try:
-        db = DB(cfg.db)
-        logger.debug("Database connection inited")
-    except DBError as e:
-        logger.error(f"Unable to setup database connection: {str(e)}")
-        sys.exit(signal.SIGILL)
-
-    insights_api.state.config = cfg
-    insights_api.state.github = gh
-    insights_api.state.db = db
-
-
-def insights_factory(static_dir: str | None = None) -> FastAPI | None:
+def insights_factory(
+    static_dir: str | None = None,
+) -> FastAPI:
     api_tags_meta = [{"name": "github", "description": "GitHub webhook operations"}]
 
     insights_app = FastAPI(
@@ -116,7 +97,9 @@ def insights_factory(static_dir: str | None = None) -> FastAPI | None:
         openapi_tags=api_tags_meta,
     )
 
-    state_init(insights_api)
+    gstate = GlobalState()
+    insights_app.state.gstate = gstate
+    insights_api.state.gstate = gstate
 
     insights_api.include_router(github_api.router)
 
@@ -132,16 +115,18 @@ def factory():
     return insights_factory(get_frontend_data_path())
 
 
-def main():
+async def main():
     setup_logging()
-    uvicorn.run(  # pyright: ignore[reportUnknownMemberType]
+    config = uvicorn.Config(
         "1e3ms-insights:factory",
         host="0.0.0.0",
         port=8080,
-        factory=True,
         log_config=get_uvicorn_logging_config(),
+        factory=True,
     )
+    server = uvicorn.Server(config)
+    await server.serve()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

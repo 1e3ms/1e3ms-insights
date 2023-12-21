@@ -9,14 +9,12 @@
 import githubkit as ghk
 
 from insights.config import GitHubConfigModel
+from insights.error import InsightsError
 
 
-class InvalidPrivateKeyError(Exception):
-    def __str__(self) -> str:
-        return "Invalid GitHub private key"
-
-    def __repr__(self) -> str:
-        return str(self)
+class InvalidPrivateKeyError(InsightsError):
+    def __init__(self) -> None:
+        super().__init__("Invalid GitHub private key")
 
 
 class Github:
