@@ -16,38 +16,23 @@ from typing import Any
 
 import httpx
 
-from insights.config import Config, ConfigError
-
 
 def main() -> None:
     if len(sys.argv) < 3:
-        print(f"usage: {sys.argv[0]} <host:port> <config.json> [event.json]")
+        print(f"usage: {sys.argv[0]} <host:port> event.json")
         sys.exit(errno.EINVAL)
 
     addr = sys.argv[1]
 
-    cfg_path = Path(sys.argv[2])
-    if not cfg_path.exists():
-        print(f"Config not found at '{cfg_path}'")
+    event_path = Path(sys.argv[2])
+    if not event_path.exists():
+        print(f"Event file at '{event_path}' does not exist")
         sys.exit(errno.ENOENT)
-
-    event_path: Path | None = None
-    if len(sys.argv) == 4:
-        event_path = Path(sys.argv[3])
-        if not event_path.exists():
-            print(f"Event file at '{event_path}' does not exist")
-            sys.exit(errno.ENOENT)
-        elif not event_path.is_file():
-            print(f"Event file at '{event_path}' not a regular file")
-            sys.exit(errno.EINVAL)
-
-    try:
-        cfg = Config(cfg_path.as_posix())
-    except ConfigError as e:
-        print(f"Error loading config file: {str(e)}")
+    elif not event_path.is_file():
+        print(f"Event file at '{event_path}' not a regular file")
         sys.exit(errno.EINVAL)
 
-    replay_events(addr, cfg.eventdb, event_path)
+    replay_event_file(addr, event_path)
 
 
 def replay_events(addr: str, eventdb: Path | None, event_file: Path | None) -> None:

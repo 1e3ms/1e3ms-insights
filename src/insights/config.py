@@ -94,8 +94,11 @@ class MongoDBConfigModel(BaseModel):
 
 
 class EventDBConfigModel(BaseModel):
-    eventdb_path: Path
-    errors_path: Path | None = Field(default=None)
+    path: Path
+    log_webhook: bool = Field(default=False)
+    log_webhook_errors: bool = Field(default=False)
+    log_rest: bool = Field(default=False)
+    log_rest_errors: bool = Field(default=False)
 
 
 class ConfigModel(BaseModel):
@@ -142,13 +145,5 @@ class Config:
         return self._eventdb is not None
 
     @property
-    def eventdb(self) -> Path | None:
-        if self._eventdb is not None:
-            return self._eventdb.eventdb_path
-        return None
-
-    @property
-    def eventdb_errors(self) -> Path | None:
-        if self._eventdb is not None:
-            return self._eventdb.errors_path
-        return None
+    def eventdb(self) -> EventDBConfigModel | None:
+        return self._eventdb

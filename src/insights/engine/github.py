@@ -33,3 +33,12 @@ class Github:
             user_agent="1e3ms-insights",
         )
         pass
+
+    @property
+    def gh(self) -> ghk.GitHub[ghk.AppAuthStrategy]:
+        return self._github
+
+    def get(self, installation_id: int) -> ghk.GitHub[ghk.AppInstallationAuthStrategy]:
+        return self._github.with_auth(
+            self._github.auth.as_installation(installation_id)
+        )

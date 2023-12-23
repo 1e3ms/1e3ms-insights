@@ -64,7 +64,7 @@ class GlobalState:
             # sys.exit(signal.SIGILL)
 
         try:
-            insights = Insights(dbc)
+            insights = Insights(cfg, gh, dbc)
             await insights.init()
         except InsightsError as e:
             logger.error(f"Unable to setup insights core: {str(e)}")

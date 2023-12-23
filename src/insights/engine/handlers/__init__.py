@@ -11,12 +11,27 @@ from functools import singledispatch
 from fastapi.logger import logger
 from githubkit.webhooks.types import IssueCommentEvent, WebhookEvent
 
+from insights.engine.handlers.hooks.issues import handle_issue_comment
+from insights.engine.insights import Insights
+from insights.engine.installation import Installation
+
 
 @singledispatch
-async def handle_webhook(event_name: str, event: WebhookEvent):
+async def handle_webhook(
+    event: WebhookEvent,
+    event_name: str,
+    insights: Insights,
+    installation: Installation,
+) -> None:
     logger.debug(f"got event '{event_name}': {event}")
 
 
 @handle_webhook.register
-async def _(event_name: str, event: IssueCommentEvent):
+async def _(
+    event: IssueCommentEvent,
+    event_name: str,
+    insights: Insights,
+    installation: Installation,
+) -> None:
     logger.debug(f"got issue comment event: {event.action}")
+    await handle_issue_comment(insights, installation, event)
